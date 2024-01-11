@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Styletransfer" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="styletransfer_VGG" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="StyleTransfer" project-jdk-type="Python SDK" />
 </project>
