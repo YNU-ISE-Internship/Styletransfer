@@ -2,9 +2,7 @@ import torch
 import torchvision
 from torch import nn
 from d2l import torch as d2l
-import pickle
 from tqdm import tqdm
-import os
 
 
 class SynthesizedImage(nn.Module):
@@ -93,9 +91,23 @@ class Generate:
         trainer = torch.optim.Adam(gen_img.parameters(), lr=lr)
         return gen_img(), trainer
 
-    def train(self, lr=0.3, num_epochs=500, lr_decay_epoch=50):
+    def get_styles(self, image_shape, device, style_img):
+        style_X = self.preprocess(style_img, image_shape).to(device)
+        _, styles_Y = self.extract_features(style_X, self.content_layers, self.style_layers)
+        return style_X, styles_Y
+
+    def get_pattern(self):
+        with torch.no_grad():
+            style_img = d2l.Image.open(self.input_style)
+            _, styles_Y = self.get_styles(self.image_shape, self.device, style_img)
+            style_Y = [self.gram(Y) for Y in styles_Y]
+            return style_Y
+
+
+    def train(self, lr=0.3, num_epochs=1000, lr_decay_epoch=50):
         X, contents_Y = self.get_contents(self.image_shape, self.device)
         X, trainer = self.get_inits(X, self.device, lr)
+        style_Y = self.get_pattern()
         scheduler = torch.optim.lr_scheduler.StepLR(trainer, lr_decay_epoch, 0.8)
         # animator = d2l.Animator(xlabel='epoch', ylabel='loss',
         #                         xlim=[10, num_epochs],
@@ -107,7 +119,7 @@ class Generate:
             contents_Y_hat, styles_Y_hat = self.extract_features(
                 X, self.content_layers, self.style_layers)
             contents_l, styles_l, tv_l, l = loss.compute_loss(
-                X, contents_Y_hat, styles_Y_hat, contents_Y, self.style_Y)
+                X, contents_Y_hat, styles_Y_hat, contents_Y, style_Y)
             l.backward()
             trainer.step()
             scheduler.step()
@@ -117,13 +129,12 @@ class Generate:
             #                              float(sum(styles_l)), float(tv_l)])
         return X
 
-    def __init__(self, model_type, path_style, path_image, image_shape):
+    def __init__(self, model_type, input_style, input_image, output_image, image_shape):
         # self.image_shape = (300, 450)
         self.image_shape = image_shape
-        self.content_img = d2l.Image.open(path_image)
-        with open(path_style + "/style_" + model_type, "rb") as fp:
-            Y = pickle.load(fp)
-        self.style_Y = [0.1 * y1 + 0.9 * y2 for y1, y2 in zip(Y[1], Y[5])]
+        self.content_img = d2l.Image.open(input_image)
+        self.input_style = input_style
+        self.output_img = output_image
 
         self.device = torch.device("cuda")
 
@@ -144,8 +155,3 @@ class Generate:
         self.net.eval()
 
 
-a = Generate("light", "../yh", '../img/GOEY7(QY}M(H(PPY[]X3`82_tmb.jpg', (480, 600))
-output = a.train(num_epochs=2000, lr_decay_epoch=250)
-output_image = a.postprocess(output)  # Convert the tensor to an image
-output_image_path = '../yh/generated_image.jpg'  # Specify the local path to save the image
-output_image.save(output_image_path)  # Save the image

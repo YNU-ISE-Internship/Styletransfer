@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Style Transfer Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .panel-heading {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .image-section {
+            margin-bottom: 2rem;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 20vh;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .separator {
+            border: none;
+            height: 2px;
+            background-color: #eee;
+            margin: 2rem 0;
+        }
+
+        .blue-btn {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 1rem auto 0;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .blue-btn:hover {
+            background-color: #1e3a8a;
+        }
+
+        .file-upload-btn {
+            display: block;
+            width: 33%;
+            margin: 0.5rem auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .file-upload-input {
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-text {
+            display: block;
+            padding: 0.3rem 0.6rem;
+            background-color: #2563eb;
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script>
+        function previewImage(imageInputId, imagePreviewId, imageButtonTextId) {
+            const inputElement = document.getElementById(imageInputId);
+            const imagePreview = document.getElementById(imagePreviewId);
+            const buttonText = document.getElementById(imageButtonTextId);
+
+            if (inputElement.files && inputElement.files[0]) {
+                imagePreview.src = URL.createObjectURL(inputElement.files[0]);
+                imagePreview.onload = function () {
+                    URL.revokeObjectURL(imagePreview.src); // Free memory
+                };
+                buttonText.textContent = "Uploaded"; // Change button text after upload
+            } else {
+                buttonText.textContent = "Choose File"; // Reset button text if no file is selected
+            }
+        }
+
+        function startProcessing() {
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('processedImage').style.display = 'none';
+            document.getElementById('downloadButton').style.display = 'none';
+            setTimeout(finishProcessing, 3000);
+        }
+
+        function finishProcessing() {
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('processedImage').style.display = 'block';
+            document.getElementById('downloadButton').style.display = 'block';
+            document.getElementById('processedImage').src = '/OutPut_Image/output.jpg';
+
+        }
+
+        function downloadImage() {
+            var imageSrc = document.getElementById('processedImage').src;
+            var downloadLink = document.createElement('a');
+            downloadLink.href = imageSrc;
+            downloadLink.download = 'Processed-Image.jpg';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        function startProcessing() {
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('processedImage').style.display = 'none';
+            document.getElementById('downloadButton').style.display = 'none';
+
+            // 假设您已经触发了风格迁移的后端处理
+            // 开始轮询检查图片是否生成
+            checkImageStatus();
+        }
+
+        function checkImageStatus() {
+            fetch('/check_image')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        document.getElementById('spinner').style.display = 'none';
+                        document.getElementById('processedImage').style.display = 'block';
+                        document.getElementById('downloadButton').style.display = 'block';
+                        document.getElementById('processedImage').src = '/OutPut_Image/output.jpg';
+                    } else {
+                        // 如果图片尚未生成，等待一段时间后再次检查
+                        setTimeout(checkImageStatus, 2000); // 每2秒检查一次
+                    }
+                });
+        }
+
+    </script>
+</head>
+<body class="bg-gray-50">
+<div class="flex h-screen">
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Main panel -->
+        <div class="flex-1 flex overflow-auto">
+            <!-- Left panel for Image Display -->
+            <div class="w-3/4 p-8 border-r overflow-auto">
+                <!-- Upper Section for Image Upload -->
+                <div class="flex">
+                    <!-- Content Image Upload -->
+                    <div class="flex-1 text-center mr-4">
+                        <h3 class="panel-heading">Content Image</h3>
+                        <img id="contentImagePreview" class="image-preview mx-auto"/>
+                        <label class="file-upload-btn">
+                            <span id="contentImageButtonText" class="file-upload-text">Choose File</span>
+                            <input type="file" id="contentImageUpload" class="file-upload-input"
+                                   name="contentImageUpload" accept="image/*"
+                                   onchange="previewImage('contentImageUpload', 'contentImagePreview', 'contentImageButtonText')"/>
+                        </label>
+                    </div>
+                    <!-- Style Image Upload -->
+                    <div class="flex-1 text-center ml-4">
+                        <h3 class="panel-heading">Style Image</h3>
+                        <img id="styleImagePreview" class="image-preview mx-auto"/>
+                        <label class="file-upload-btn">
+                            <span id="styleImageButtonText" class="file-upload-text">Choose File</span>
+                            <input type="file" id="styleImageUpload" class="file-upload-input" name="styleImageUpload"
+                                   accept="image/*"
+                                   onchange="previewImage('styleImageUpload', 'styleImagePreview', 'styleImageButtonText')"/>
+                        </label>
+                    </div>
+                </div>
+                <hr class="separator">
+                <!-- Lower Section for Processed Image -->
+                <div class="image-section text-center">
+                    <h3 class="panel-heading">Processed Image</h3>
+                    <div id="spinner" class="spinner" style="display: none; margin: 20px auto;"></div>
+                    <img id="processedImage" class="image-preview mx-auto" style="display: none;"/>
+                    <button id="downloadButton" class="blue-btn" style="display: none;" onclick="downloadImage()">
+                        Download
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right panel for Image Options -->
+            <div class="w-1/4 p-8">
+                <div class="option-panel">
+                    <h3 class="panel-heading">Image Options</h3>
+                    <div class="option-item">
+                        <label for="modelSelect" class="block mb-2 text-sm font-medium text-gray-900">Select
+                            Model:</label>
+                        <select id="modelSelect" name="model"
+                                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <option value="VGG19">VGG19</option>
+                            <option value="MobileNet">MobileNet</option>
+                            <!-- More options -->
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label for="widthInput" class="block mb-2 text-sm font-medium text-gray-900">Width (px):</label>
+                        <input type="number" id="widthInput" name="width"
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                               placeholder="500" value="500">
+                    </div>
+                    <div class="option-item">
+                        <label for="heightInput" class="block mb-2 text-sm font-medium text-gray-900">Height
+                            (px):</label>
+                        <input type="number" id="heightInput" name="height"
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                               placeholder="500" value="500">
+                    </div>
+                    <button class="blue-btn style-transfer-btn" onclick="startProcessing()">
+                        Start Style Transfer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
