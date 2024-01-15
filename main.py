@@ -25,7 +25,7 @@ def allowed_file(filename):
 def index():
     return send_from_directory('WebUI', 'UI.html')
 
-@app.route('/upload', methods=['POST'])
+@app.route('/uploads', methods=['POST'])
 def upload_file():
     if 'contentImage' not in request.files or 'styleImage' not in request.files:
         return jsonify({'error': 'No file part'}), 400

@@ -118,8 +118,36 @@
             document.getElementById('spinner').style.display = 'block';
             document.getElementById('processedImage').style.display = 'none';
             document.getElementById('downloadButton').style.display = 'none';
-            setTimeout(finishProcessing, 3000);
+            uploadImages();
         }
+
+
+        function uploadImages() {
+            var formData = new FormData();
+            var contentImageFile = document.getElementById('contentImageUpload').files[0];
+            var styleImageFile = document.getElementById('styleImageUpload').files[0];
+
+            formData.append('contentImage', contentImageFile);
+            formData.append('styleImage', styleImageFile);
+
+            fetch('/uploads', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                    } else {
+                        console.log('Success:', data.message);
+                        checkImageStatus();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+
 
         function finishProcessing() {
             document.getElementById('spinner').style.display = 'none';
@@ -137,16 +165,6 @@
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
-        }
-
-        function startProcessing() {
-            document.getElementById('spinner').style.display = 'block';
-            document.getElementById('processedImage').style.display = 'none';
-            document.getElementById('downloadButton').style.display = 'none';
-
-            // 假设您已经触发了风格迁移的后端处理
-            // 开始轮询检查图片是否生成
-            checkImageStatus();
         }
 
         function checkImageStatus() {
